@@ -4,7 +4,7 @@ import random
 # 초기화
 pygame.init()
 
-# 화면 설정 (크기 확장)
+# 화면 설정
 SCREEN_WIDTH = 800
 SCREEN_HEIGHT = 840
 screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
@@ -45,7 +45,6 @@ GRID_HEIGHT = 20
 TOP_LEFT_X = (SCREEN_WIDTH - GRID_WIDTH * BLOCK_SIZE) // 2
 TOP_LEFT_Y = SCREEN_HEIGHT - (GRID_HEIGHT * BLOCK_SIZE) - 50
 
-# Piece 클래스
 class Piece:
     def __init__(self, x, y, shape):
         self.x = x
@@ -100,30 +99,41 @@ def draw_grid(surface, grid):
     for j in range(GRID_WIDTH + 1):
         pygame.draw.line(surface, GRAY, (TOP_LEFT_X + j * BLOCK_SIZE, TOP_LEFT_Y), (TOP_LEFT_X + j * BLOCK_SIZE, TOP_LEFT_Y + GRID_HEIGHT * BLOCK_SIZE))
 
+# ✅ 수정된 clear_rows 함수
 def clear_rows(grid, locked):
-    cleared = 0
+    rows_to_clear = []
     for i in range(len(grid) - 1, -1, -1):
         if BLACK not in grid[i]:
-            cleared += 1
-            for j in range(GRID_WIDTH):
-                try:
-                    del locked[(j, i)]
-                except:
-                    pass
-    if cleared:
-        for key in sorted(locked.keys(), key=lambda x: x[1])[::-1]:
-            x, y = key
-            if y < i:
-                new_key = (x, y + cleared)
-                locked[new_key] = locked.pop(key)
-    return cleared
+            rows_to_clear.append(i)
+
+    if not rows_to_clear:
+        return 0
+
+    for row in rows_to_clear:
+        for col in range(GRID_WIDTH):
+            try:
+                del locked[(col, row)]
+            except:
+                continue
+
+    # 윗줄 블럭 한 칸씩 내리기
+    for row in sorted(rows_to_clear):
+        new_locked = {}
+        for (x, y), color in locked.items():
+            if y < row:
+                new_locked[(x, y + 1)] = color
+            else:
+                new_locked[(x, y)] = color
+        locked.clear()
+        locked.update(new_locked)
+
+    return len(rows_to_clear)
 
 def draw_window(surface, grid, score, held):
     surface.fill(BLACK)
     draw_text(surface, 'TETRIS', 65, SCREEN_WIDTH / 2, 30)
     draw_text(surface, 'Score: ' + str(score), 30, SCREEN_WIDTH / 2, 100)
 
-    # Hold 블럭
     if held:
         draw_text(surface, 'Hold', 25, 100, 180)
         shape = held.shape[0]
@@ -136,7 +146,6 @@ def draw_window(surface, grid, score, held):
     draw_grid(surface, grid)
     pygame.display.update()
 
-# 게임 루프
 def main():
     locked_positions = {}
     grid = create_grid(locked_positions)
