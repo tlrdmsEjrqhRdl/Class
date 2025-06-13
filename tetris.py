@@ -125,7 +125,7 @@ def draw_window(surface, grid, score, held):
 
     # Hold 블럭
     if held:
-        draw_text(surface, 'Hold', 25, 100, 200)
+        draw_text(surface, 'Hold', 25, 100, 180)
         shape = held.shape[0]
         for i, row in enumerate(shape):
             for j, cell in enumerate(row):
